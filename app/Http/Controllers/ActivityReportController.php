@@ -7,17 +7,22 @@ use App\Models\KitCatalog;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\ReportAggregationService;
+use App\Traits\AuthorizesSessionAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ActivityReportController extends Controller
 {
+    use AuthorizesSessionAccess;
+
     public function __construct(
         protected ReportAggregationService $aggregationService
     ) {}
 
     public function edit(TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $session->load(['institution', 'leadFacilitator1', 'leadFacilitator2']);
 
         $report = $session->activityReport ?? ActivityReport::create([
@@ -52,6 +57,8 @@ class ActivityReportController extends Controller
 
     public function update(Request $request, TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $report = $session->activityReport;
 
         $validated = $request->validate([

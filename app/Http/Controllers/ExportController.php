@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\TrainingSession;
 use App\Services\ReportAggregationService;
+use App\Traits\AuthorizesSessionAccess;
 use Illuminate\Http\Request;
 
 class ExportController extends Controller
 {
+    use AuthorizesSessionAccess;
+
     public function __construct(
         protected ReportAggregationService $aggregationService
     ) {}
@@ -17,6 +20,8 @@ class ExportController extends Controller
      */
     public function printAttendance(TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $session->load(['institution', 'leadFacilitator1', 'leadFacilitator2']);
 
         $attendances = $session->attendances()
@@ -32,6 +37,8 @@ class ExportController extends Controller
      */
     public function printReport(TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $session->load(['institution', 'leadFacilitator1', 'leadFacilitator2', 'activityReport.mediaAttachments']);
         $report = $session->activityReport;
 

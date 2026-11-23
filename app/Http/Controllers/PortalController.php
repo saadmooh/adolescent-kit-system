@@ -10,12 +10,15 @@ use App\Models\KitCatalog;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\ReportAggregationService;
+use App\Traits\AuthorizesSessionAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PortalController extends Controller
 {
+    use AuthorizesSessionAccess;
+
     public function __construct(
         protected ReportAggregationService $aggregationService
     ) {}
@@ -112,6 +115,8 @@ class PortalController extends Controller
      */
     public function attendance(TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $session->load('institution');
         
         $attendances = $session->attendances()
@@ -129,6 +134,8 @@ class PortalController extends Controller
      */
     public function storeBeneficiary(Request $request, TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $validated = $request->validate([
             'full_name' => 'required|string|max:150',
             'birth_date' => 'required|date|before:today',
@@ -180,6 +187,8 @@ class PortalController extends Controller
      */
     public function report(TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $session->load(['institution', 'leadFacilitator1', 'leadFacilitator2']);
 
         $report = $session->activityReport ?? ActivityReport::create([
@@ -206,6 +215,8 @@ class PortalController extends Controller
      */
     public function editSession(TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
         $institutions = Institution::orderBy('name')->get();
         $facilitators = User::whereIn('role', ['facilitator', 'assistant', 'admin'])->orderBy('name')->get();
 
@@ -226,6 +237,13 @@ class PortalController extends Controller
      */
     public function updateSession(Request $request, TrainingSession $session)
     {
+        $this->authorizeSessionAccess($session);
+
+        // حماية أمنية: منع تصعيد الصلاحيات واعتماد الجلسة إلا للمدير فقط
+        $statusRule = Auth::user()->role === 'admin'
+            ? 'required|in:draft,ongoing,completed,approved'
+            : 'required|in:draft,ongoing,completed';
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'session_date' => 'required|date',
@@ -239,9 +257,10 @@ class PortalController extends Controller
             'assistant_facilitators.*' => 'nullable|string|max:150',
             'transit_from_municipality' => 'nullable|string|max:100',
             'transit_to_municipality' => 'nullable|string|max:100',
-            'status' => 'required|in:draft,ongoing,completed,approved',
+            'status' => $statusRule,
         ], [
             'lead_facilitator_2_id.different' => 'لا يمكن اختيار نفس الشخص كميسر رئيسي ومساعد في آن واحد.',
+            'status.in' => 'غير مصرح لك باعتماد الجلسة رسمياً؛ فقط إدارة النظام تملك صلاحية الاعتماد.',
         ]);
 
         if (!empty($validated['assistant_facilitators'])) {
@@ -268,6 +287,13 @@ class PortalController extends Controller
      */
     public function updateBeneficiary(Request $request, TrainingSession $session, Beneficiary $beneficiary)
     {
+        $this->authorizeSessionAccess($session);
+
+        // حماية IDOR: التحقق من أن اليافع مسجل فعلياً في كشف حضور هذه الجلسة
+        if (!$session->attendances()->where('beneficiary_id', $beneficiary->id)->exists()) {
+            abort(404, 'اليافع المحدد غير مسجل في كشف حضور هذه الجلسة.');
+        }
+
         $validated = $request->validate([
             'full_name' => 'required|string|max:150',
             'birth_date' => 'required|date|before:today',
@@ -319,6 +345,13 @@ class PortalController extends Controller
      */
     public function destroyAttendance(TrainingSession $session, Attendance $attendance)
     {
+        $this->authorizeSessionAccess($session);
+
+        // حماية IDOR: التحقق من أن سجل الحضور يتبع لهذه الجلسة
+        if ($attendance->training_session_id !== $session->id) {
+            abort(404, 'سجل الحضور لا يتبع لهذه الجلسة.');
+        }
+
         $beneficiaryName = $attendance->beneficiary->full_name ?? 'اليافع';
         $attendance->delete();
 

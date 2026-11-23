@@ -74,6 +74,8 @@ Route::middleware(['auth'])->prefix('portal')->name('portal.')->group(function (
 Route::post('reports/{report}/media', [MediaController::class, 'store'])->name('reports.media.store')->middleware('auth');
 Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy')->middleware('auth');
 
-// الطباعة والتصدير المطابق للأصل
-Route::get('sessions/{session}/print-attendance', [ExportController::class, 'printAttendance'])->name('sessions.print.attendance');
-Route::get('sessions/{session}/print-report', [ExportController::class, 'printReport'])->name('sessions.print.report');
+// الطباعة والتصدير المطابق للأصل (محمية بالمصادقة والتحقق من الصلاحيات)
+Route::middleware(['auth'])->group(function () {
+    Route::get('sessions/{session}/print-attendance', [ExportController::class, 'printAttendance'])->name('sessions.print.attendance');
+    Route::get('sessions/{session}/print-report', [ExportController::class, 'printReport'])->name('sessions.print.report');
+});
