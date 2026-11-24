@@ -105,6 +105,81 @@
         </div>
     </div>
 
+    <!-- طلبات التسجيل المعلقة بانتظار موافقة واعتماد مدير النظام -->
+    @if(isset($pendingUsers) && $pendingUsers->count() > 0)
+        <div class="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-4">
+            <div class="flex items-center justify-between border-b-2 border-black pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 bg-red-600 inline-block animate-pulse"></span>
+                    <h2 class="font-black text-sm text-black uppercase">
+                        [ ⏳ ] طلبات تسجيل ميسرين ومساعدين جدد بانتظار اعتماد وموافقة الإدارة
+                    </h2>
+                </div>
+                <span class="border border-black px-2.5 py-0.5 text-xs font-bold bg-black text-white font-mono">
+                    {{ $pendingUsers->count() }} طلب قيد المراجعة
+                </span>
+            </div>
+
+            <p class="text-xs text-neutral-700">
+                الحسابات التالية قام أصحابها بتقديم طلب التسجيل عبر البوابة؛ <strong>ولن يتمكنوا من تسجيل الدخول وإدخال أو استعراض أي بيانات حتى تقوم بقبول طلباتهم وتفعيل حساباتهم رسمياً.</strong>
+            </p>
+
+            <div class="overflow-x-auto border-2 border-black">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-black text-white font-bold">
+                        <tr>
+                            <th class="py-2.5 px-3">الاسم واللقب</th>
+                            <th class="py-2.5 px-3">البريد الإلكتروني</th>
+                            <th class="py-2.5 px-3">الهاتف</th>
+                            <th class="py-2.5 px-3">الموقع الجغرافي</th>
+                            <th class="py-2.5 px-3">الصفة المطلوبة</th>
+                            <th class="py-2.5 px-3">تاريخ التقديم</th>
+                            <th class="py-2.5 px-3 text-center">القرار والإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-black font-medium">
+                        @foreach($pendingUsers as $pu)
+                            <tr class="hover:bg-neutral-50 transition">
+                                <td class="py-3 px-3 font-bold text-black">{{ $pu->name }}</td>
+                                <td class="py-3 px-3 font-mono">{{ $pu->email }}</td>
+                                <td class="py-3 px-3 font-mono">{{ $pu->phone ?? '—' }}</td>
+                                <td class="py-3 px-3">{{ $pu->municipality ? $pu->municipality . ' (' . $pu->wilaya . ')' : '—' }}</td>
+                                <td class="py-3 px-3">
+                                    <span class="border border-black px-1.5 py-0.5 font-bold {{ $pu->role === 'facilitator' ? 'bg-white text-black' : 'bg-neutral-200 text-black' }}">
+                                        {{ $pu->role === 'facilitator' ? 'ميسر رئيسي' : 'ميسر مساعد' }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-3 font-mono text-[11px] text-neutral-500">
+                                    {{ $pu->created_at ? $pu->created_at->format('Y-m-d H:i') : '—' }}
+                                </td>
+                                <td class="py-3 px-3 text-center">
+                                    <div class="inline-flex items-center gap-2">
+                                        <!-- قبول واعتماد الحساب -->
+                                        <form action="{{ route('admin.facilitators.approve', $pu) }}" method="POST" class="inline">
+                                            @csrf
+                                            <input type="hidden" name="role" value="{{ $pu->role }}">
+                                            <button type="submit" class="border-2 border-black bg-black text-white px-3 py-1 font-black text-xs hover:bg-neutral-800 transition">
+                                                [ ✓ ] قبول وتفعيل الحساب
+                                            </button>
+                                        </form>
+
+                                        <!-- رفض الطلب -->
+                                        <form action="{{ route('admin.facilitators.reject', $pu) }}" method="POST" class="inline" onsubmit="return confirm('هل تريد بالتأكيد رفض طلب تسجيل {{ $pu->name }}؟')">
+                                            @csrf
+                                            <button type="submit" class="border border-black bg-white text-black px-2.5 py-1 font-bold text-xs hover:bg-black hover:text-white transition">
+                                                [ ✕ ] رفض
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <!-- قسم إدارة واعتماد قائمة الميسرين مباشرة من لوحة التحكم -->
     <div id="facilitators-section" class="space-y-4">
 
@@ -241,6 +316,7 @@
                                 <tr>
                                     <th class="py-2.5 px-3">الاسم واللقب</th>
                                     <th class="py-2.5 px-3">الصفة</th>
+                                    <th class="py-2.5 px-3">الحالة</th>
                                     <th class="py-2.5 px-3">الهاتف</th>
                                     <th class="py-2.5 px-3">الموقع</th>
                                     <th class="py-2.5 px-3 text-center">الجلسات</th>
@@ -249,7 +325,7 @@
                             </thead>
                             <tbody class="divide-y divide-black font-medium">
                                 @forelse($facilitators as $f)
-                                    <tr class="hover:bg-neutral-50 transition">
+                                    <tr class="hover:bg-neutral-50 transition {{ !$f->is_active ? 'opacity-60 bg-neutral-100' : '' }}">
                                         <td class="py-2.5 px-3 font-bold text-black">
                                             <div>{{ $f->name }}</div>
                                             <div class="text-[10px] text-neutral-500 font-mono">{{ $f->email }}</div>
@@ -261,6 +337,13 @@
                                                 <span class="border border-black px-1.5 py-0.5 bg-white text-black text-[10px] font-bold">ميسر رئيسي</span>
                                             @else
                                                 <span class="border border-black px-1.5 py-0.5 bg-neutral-200 text-black text-[10px] font-bold">مساعد</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-2.5 px-3">
+                                            @if($f->is_active)
+                                                <span class="border border-black px-1.5 py-0.5 bg-black text-white text-[10px] font-bold">✓ مفعل</span>
+                                            @else
+                                                <span class="border border-black px-1.5 py-0.5 bg-neutral-300 text-black text-[10px] font-bold">⏸ معطل</span>
                                             @endif
                                         </td>
                                         <td class="py-2.5 px-3 font-mono">{{ $f->phone ?? '—' }}</td>
@@ -278,6 +361,12 @@
                                                     ✏️ تعديل
                                                 </button>
                                                 @if($f->id !== Auth::id())
+                                                    <form action="{{ route('admin.facilitators.toggleStatus', $f) }}" method="POST" class="inline">
+                                                        @csrf
+                                                        <button type="submit" class="border border-black px-1.5 py-0.5 text-[10px] font-bold hover:bg-black hover:text-white transition" title="{{ $f->is_active ? 'تعطيل الحساب' : 'تفعيل الحساب' }}">
+                                                            {{ $f->is_active ? '⏸' : '▶️' }}
+                                                        </button>
+                                                    </form>
                                                     <form action="{{ route('admin.facilitators.destroy', $f) }}" method="POST" onsubmit="return confirm('هل تريد بالتأكيد حذف هذا الميسر؟')">
                                                         @csrf
                                                         @method('DELETE')

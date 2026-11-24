@@ -29,20 +29,24 @@ Route::get('/', function () {
     return view('home', compact('stats'));
 })->name('home');
 
-// المسار السري غير المتوقع لبوابة الدخول (Configurable via ADMIN_LOGIN_PATH in .env)
+// ==========================================
+// مصادقة الدخول والتسجيل (مع شرط موافقة المدير)
+// ==========================================
 $loginPath = config('app.admin_login_path', 'sys-access-auth-8492');
 
+// مسار الدخول والتسجيل عبر الرابط المخصص
 Route::get($loginPath, [AuthController::class, 'showLoginForm'])->name('login');
 Route::post($loginPath, [AuthController::class, 'login'])->name('login.post');
-Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+Route::get($loginPath . '/register', [AuthController::class, 'showRegisterForm'])->name('register');
+Route::post($loginPath . '/register', [AuthController::class, 'register'])->name('register.post');
 
-// إخفاء وحظر كافة مسارات الدخول والتسجيل العامة لتبدو كصفحات غير موجودة إطلاقاً (404 Not Found)
-Route::any('login', fn () => abort(404));
-Route::any('admin/login', fn () => abort(404));
-Route::any('register', fn () => abort(404));
-Route::any('signup', fn () => abort(404));
-Route::any('auth/register', fn () => abort(404));
-Route::any('user/register', fn () => abort(404));
+// مسارات مباشرة متوافقة
+Route::get('login', [AuthController::class, 'showLoginForm'])->name('login.direct');
+Route::post('login', [AuthController::class, 'login'])->name('login.direct.post');
+Route::get('register', [AuthController::class, 'showRegisterForm'])->name('register.direct');
+Route::post('register', [AuthController::class, 'register'])->name('register.direct.post');
+
+Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 // ==========================================
 // 1. لوحة التحكم الإدارية (Admin Control Panel)
@@ -51,13 +55,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::post('sessions/{session}/approve', [AdminDashboardController::class, 'approveSession'])->name('sessions.approve');
     
-    // إدارة قائمة الميسرين والمساعدين
+    // إدارة واعتماد قائمة الميسرين والمساعدين
     Route::get('facilitators', [FacilitatorController::class, 'index'])->name('facilitators.index');
     Route::post('facilitators', [FacilitatorController::class, 'store'])->name('facilitators.store');
     Route::put('facilitators/{user}', [FacilitatorController::class, 'update'])->name('facilitators.update');
     Route::delete('facilitators/{user}', [FacilitatorController::class, 'destroy'])->name('facilitators.destroy');
+    Route::post('facilitators/{user}/approve', [FacilitatorController::class, 'approveRegistration'])->name('facilitators.approve');
+    Route::post('facilitators/{user}/reject', [FacilitatorController::class, 'rejectRegistration'])->name('facilitators.reject');
+    Route::post('facilitators/{user}/toggle-status', [FacilitatorController::class, 'toggleActiveStatus'])->name('facilitators.toggleStatus');
 
-    // إدارة كافة الجلسات من قبل الإدارة
+    // توجيه جلسات الإدارة إلى جدول الجلسات المعتمد في اللوحة
     Route::get('sessions', [TrainingSessionController::class, 'index'])->name('sessions.index');
     Route::get('sessions/{session}/edit', [PortalController::class, 'editSession'])->name('sessions.edit');
     Route::delete('sessions/{session}', [TrainingSessionController::class, 'destroy'])->name('sessions.destroy');

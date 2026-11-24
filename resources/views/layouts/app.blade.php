@@ -104,9 +104,14 @@
                             </button>
                         </form>
                     @else
-                        <!-- إخفاء زر الدخول تماماً عن المستخدمين العاديين -->
-                        <div class="hidden sm:flex items-center gap-2 text-[11px] font-mono text-neutral-400 border border-neutral-800 px-3 py-1">
-                            <span>الجمهورية الجزائرية الديمقراطية الشعبية</span>
+                        <!-- روابط الدخول وطلب الحساب للميسرين -->
+                        <div class="flex items-center gap-2">
+                            <a href="{{ route('login') }}" class="px-3 py-1.5 bg-white text-black font-bold text-xs hover:bg-neutral-200 border border-white transition">
+                                تسجيل الدخول
+                            </a>
+                            <a href="{{ route('register') }}" class="px-3 py-1.5 border border-white text-white font-bold text-xs hover:bg-white hover:text-black transition hidden sm:inline-block">
+                                طلب حساب ميسر
+                            </a>
                         </div>
                     @endauth
                 </div>

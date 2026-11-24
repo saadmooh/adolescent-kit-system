@@ -22,12 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureAdmin::class,
         ]);
 
-        // إخفاء الرابط السري: منع تحويل الزوار غير المسجلين إلى مسار الدخول السري عند تجريب مسارات الإدارة
+        // توجيه الزوار غير المسجلين: حظر مسارات الإدارة التجسسية بـ 404 وتوجيه الميسرين للدخول
         $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
-            if ($request->is('admin*') || $request->is('portal*') || $request->is('api*') || $request->is('sessions*') || $request->is('reports*') || $request->is('media*')) {
+            if ($request->is('admin*') || $request->is('api*')) {
                 abort(404);
             }
-            return route('home');
+            return route('login');
         });
     })
     ->withExceptions(function (Exceptions $exceptions) {

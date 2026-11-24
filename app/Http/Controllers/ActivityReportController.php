@@ -3,12 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityReport;
-use App\Models\KitCatalog;
 use App\Models\TrainingSession;
-use App\Models\User;
 use App\Services\ReportAggregationService;
 use App\Traits\AuthorizesSessionAccess;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ActivityReportController extends Controller
@@ -18,42 +15,6 @@ class ActivityReportController extends Controller
     public function __construct(
         protected ReportAggregationService $aggregationService
     ) {}
-
-    public function edit(TrainingSession $session)
-    {
-        $this->authorizeSessionAccess($session);
-
-        $session->load(['institution', 'leadFacilitator1', 'leadFacilitator2']);
-
-        $report = $session->activityReport ?? ActivityReport::create([
-            'training_session_id' => $session->id,
-            'host_contact_name' => $session->institution->contact_person_name,
-            'host_contact_title' => $session->institution->contact_person_title,
-            'host_contact_email' => $session->institution->contact_person_email,
-            'host_contact_phone' => $session->institution->contact_person_phone,
-            'host_wilaya' => $session->wilaya,
-            'rapporteur_wilaya' => $session->wilaya,
-            'rapporteur_date' => $session->session_date,
-        ]);
-
-        // جلب الإحصائيات المحسوبة آلياً من الحضور
-        $stats = $this->aggregationService->aggregate($session);
-
-        // جلب بنك الأنشطة والكفايات
-        $availableActivities = KitCatalog::activities()->get();
-        $availableCompetencies = KitCatalog::competencies()->get();
-
-        $facilitators = User::whereIn('role', ['facilitator', 'admin'])->get();
-
-        return view('reports.edit', compact(
-            'session',
-            'report',
-            'stats',
-            'availableActivities',
-            'availableCompetencies',
-            'facilitators'
-        ));
-    }
 
     public function update(Request $request, TrainingSession $session)
     {

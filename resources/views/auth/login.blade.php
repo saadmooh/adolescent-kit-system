@@ -97,9 +97,16 @@
                 </button>
             </form>
 
-            <div class="border-t border-black pt-3 text-center">
+            <div class="pt-3 border-t-2 border-black flex items-center justify-between text-xs">
+                <span class="text-neutral-600">ليس لديك حساب ميسر بعد؟</span>
+                <a href="{{ route('register') }}" class="font-bold text-black underline hover:bg-black hover:text-white px-1">
+                    طلب إنشاء حساب جديد &larr;
+                </a>
+            </div>
+
+            <div class="border-t border-neutral-300 pt-3 text-center">
                 <span class="text-[10px] text-neutral-500 font-mono">
-                    هذه البوابة مخصصة للموظفين والميسرين المعتمدين رسمياً. كافة محاولات الدخول غير المصرح بها مسجلة ومراقبة.
+                    الحسابات الجديدة تتطلب موافقة واعتماد مدير النظام قبل السماح بالدخول.
                 </span>
             </div>
 

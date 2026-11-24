@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ActivityReport;
 use App\Models\Beneficiary;
 use App\Models\Institution;
 use App\Models\KitCatalog;
@@ -29,9 +28,15 @@ class AdminDashboardController extends Controller
         $activitiesCount = KitCatalog::where('type', 'activity')->count();
         $competenciesCount = KitCatalog::where('type', 'competency')->count();
 
+        // طلبات التسجيل الجديدة المعلقة بانتظار قبول وموافقة المدير
+        $pendingUsers = User::where('approval_status', 'pending')
+            ->latest()
+            ->get();
+
         // قائمة الميسرين لعرضها وإدارتها مباشرة من لوحة التحكم
         $facilitators = User::whereIn('role', ['facilitator', 'assistant', 'admin'])
             ->withCount('leadSessions')
+            ->orderByDesc('is_active')
             ->orderBy('name')
             ->get();
 
@@ -61,6 +66,7 @@ class AdminDashboardController extends Controller
             'totalFacilitators',
             'activitiesCount',
             'competenciesCount',
+            'pendingUsers',
             'facilitators',
             'pendingApprovals',
             'recentSessions'

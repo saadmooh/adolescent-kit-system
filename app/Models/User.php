@@ -15,6 +15,10 @@ class User extends Authenticatable
         'email',
         'phone',
         'role',
+        'approval_status',
+        'is_active',
+        'approved_at',
+        'admin_notes',
         'wilaya',
         'municipality',
         'password',
@@ -29,8 +33,25 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'is_active' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->approval_status === 'approved' && $this->is_active;
+    }
+
+    public function isPending(): bool
+    {
+        return $this->approval_status === 'pending';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->approval_status === 'rejected';
     }
 
     public function leadSessions()

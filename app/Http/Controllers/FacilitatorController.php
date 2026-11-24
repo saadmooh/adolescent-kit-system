@@ -31,7 +31,6 @@ class FacilitatorController extends Controller
             'password.min' => 'كلمة المرور يجب أن لا تقل عن 8 أحرف.',
         ]);
 
-        // إذا لم يدخل المسؤول كلمة مرور مخصصة، نولد كلمة مرور آمنة عشوائية
         $plainPassword = !empty($validated['password'])
             ? $validated['password']
             : Str::random(10) . rand(10, 99);
@@ -44,6 +43,10 @@ class FacilitatorController extends Controller
             'wilaya' => $validated['wilaya'] ?? null,
             'municipality' => $validated['municipality'] ?? null,
             'password' => Hash::make($plainPassword),
+            'approval_status' => 'approved',
+            'is_active' => true,
+            'approved_at' => now(),
+            'admin_notes' => 'تم إنشاء الحساب واعتماده مباشرة من طرف مدير النظام.',
         ]);
 
         $roleArabic = match($user->role) {
@@ -54,7 +57,7 @@ class FacilitatorController extends Controller
         };
 
         return redirect()->to(route('admin.dashboard') . '#facilitators-section')
-            ->with('success', "تم تسجيل {$roleArabic} ({$user->name}) بنجاح في المنظومة.")
+            ->with('success', "تم تسجيل وتفعيل حساب {$roleArabic} ({$user->name}) بنجاح.")
             ->with('new_user_credentials', [
                 'name' => $user->name,
                 'email' => $user->email,
@@ -99,6 +102,52 @@ class FacilitatorController extends Controller
 
         return redirect()->to(route('admin.dashboard') . '#facilitators-section')
             ->with('success', "تم تحديث بيانات وصلاحيات الحساب ({$user->name}) في لوحة التحكم بنجاح.");
+    }
+
+    public function approveRegistration(Request $request, User $user)
+    {
+        $role = $request->input('role', $user->role);
+        if (!in_array($role, ['facilitator', 'assistant', 'admin'])) {
+            $role = 'facilitator';
+        }
+
+        $user->update([
+            'approval_status' => 'approved',
+            'is_active' => true,
+            'role' => $role,
+            'approved_at' => now(),
+            'admin_notes' => 'تم قبول واعتماد الحساب من طرف مدير النظام.',
+        ]);
+
+        return redirect()->to(route('admin.dashboard') . '#facilitators-section')
+            ->with('success', "تم قبول واعتماد حساب ({$user->name}) بنجاح! أصبح بإمكانه الآن تسجيل الدخول وإدخال بيانات الأنشطة.");
+    }
+
+    public function rejectRegistration(Request $request, User $user)
+    {
+        $user->update([
+            'approval_status' => 'rejected',
+            'is_active' => false,
+            'admin_notes' => $request->input('notes', 'تم رفض طلب التسجيل من طرف الإدارة.'),
+        ]);
+
+        return redirect()->to(route('admin.dashboard') . '#facilitators-section')
+            ->with('success', "تم رفض طلب تسجيل ({$user->name}).");
+    }
+
+    public function toggleActiveStatus(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->to(route('admin.dashboard') . '#facilitators-section')
+                ->withErrors(['error' => 'لا يمكنك تعطيل حسابك الحالي.']);
+        }
+
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        $statusText = $user->is_active ? 'تفعيل' : 'تعطيل';
+        return redirect()->to(route('admin.dashboard') . '#facilitators-section')
+            ->with('success', "تم {$statusText} حساب ({$user->name}) بنجاح.");
     }
 
     public function destroy(User $user)

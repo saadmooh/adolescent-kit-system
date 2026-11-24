@@ -21,6 +21,17 @@
             <p class="text-base sm:text-lg text-neutral-300 font-medium leading-relaxed">
                 مقاربة تربوية ومجتمعية متكاملة تهدف إلى تمكين الفتيات والفتيان من سن 10 إلى 18+ سنة في مختلف ولايات الوطن، من خلال تزويدهم بمساحات آمنة، أدوات إبداعية، ومهارات حياتية تعزز ثقتهم بأنفسهم وتدعم مشاركتهم الإيجابية في مجتمعاتهم المحلية.
             </p>
+
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+                <a href="{{ route('login') }}" class="px-6 py-3 bg-white text-black font-black text-xs uppercase tracking-wider hover:bg-neutral-200 border-2 border-white transition flex items-center gap-2">
+                    <span>تسجيل الدخول للميسرين</span>
+                    <span>&larr;</span>
+                </a>
+                <a href="{{ route('register') }}" class="px-6 py-3 bg-black text-white font-black text-xs uppercase tracking-wider hover:bg-white hover:text-black border-2 border-white transition flex items-center gap-2">
+                    <span>طلب تسجيل حساب ميسر جديد</span>
+                    <span class="text-[10px] text-neutral-400 font-mono">[ يتطلب موافقة الإدارة ]</span>
+                </a>
+            </div>
         </div>
 
         <!-- أهداف الحقيبة السريعة -->
