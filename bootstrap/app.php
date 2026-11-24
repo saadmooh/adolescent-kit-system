@@ -21,6 +21,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureAdmin::class,
         ]);
+
+        // إخفاء الرابط السري: منع تحويل الزوار غير المسجلين إلى مسار الدخول السري عند تجريب مسارات الإدارة
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            if ($request->is('admin*') || $request->is('portal*') || $request->is('api*') || $request->is('sessions*') || $request->is('reports*') || $request->is('media*')) {
+                abort(404);
+            }
+            return route('home');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

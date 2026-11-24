@@ -55,7 +55,7 @@
                 
                 <!-- الشعار -->
                 <div class="flex items-center gap-4">
-                    <a href="{{ Auth::user() && Auth::user()->role === 'admin' ? route('admin.dashboard') : route('portal.dashboard') }}" class="flex items-center gap-3">
+                    <a href="{{ Auth::check() ? (Auth::user()->role === 'admin' ? route('admin.dashboard') : route('portal.dashboard')) : route('home') }}" class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-white text-black font-black text-lg flex items-center justify-center border border-white">
                             KIT
                         </div>
@@ -66,26 +66,28 @@
                     </a>
                 </div>
 
-                <!-- تقسيم الواجهات بالأبيض والأسود -->
+                <!-- تقسيم الواجهات بالأبيض والأسود (للمستخدمين المسجلين فقط) -->
                 <nav class="hidden md:flex items-center gap-1 text-xs font-bold">
-                    @if(Auth::check() && Auth::user()->role === 'admin')
-                        <a href="{{ route('admin.dashboard') }}" 
-                           class="px-3.5 py-2 border transition {{ request()->routeIs('admin.dashboard') ? 'bg-white text-black border-white' : 'text-white border-transparent hover:border-white' }}">
-                            لوحة التحكم الإدارية
-                        </a>
-                        <a href="{{ route('admin.dashboard') }}#facilitators-section" 
-                           class="px-3.5 py-2 border transition text-neutral-300 border-transparent hover:border-white hover:text-white">
-                            ↓ إدارة الميسرين باللوحة
-                        </a>
-                    @endif
+                    @auth
+                        @if(Auth::user()->role === 'admin')
+                            <a href="{{ route('admin.dashboard') }}" 
+                               class="px-3.5 py-2 border transition {{ request()->routeIs('admin.dashboard') ? 'bg-white text-black border-white' : 'text-white border-transparent hover:border-white' }}">
+                                لوحة التحكم الإدارية
+                            </a>
+                            <a href="{{ route('admin.dashboard') }}#facilitators-section" 
+                               class="px-3.5 py-2 border transition text-neutral-300 border-transparent hover:border-white hover:text-white">
+                                ↓ إدارة الميسرين باللوحة
+                            </a>
+                        @endif
 
-                    <a href="{{ route('portal.dashboard') }}" 
-                       class="px-3.5 py-2 border transition {{ request()->routeIs('portal.*') ? 'bg-white text-black border-white' : 'text-white border-transparent hover:border-white' }}">
-                        بوابة الإدخال الميداني
-                    </a>
+                        <a href="{{ route('portal.dashboard') }}" 
+                           class="px-3.5 py-2 border transition {{ request()->routeIs('portal.*') ? 'bg-white text-black border-white' : 'text-white border-transparent hover:border-white' }}">
+                            بوابة الإدخال الميداني
+                        </a>
+                    @endauth
                 </nav>
 
-                <!-- بيانات المستخدم وخروج -->
+                <!-- بيانات المستخدم وخروج (لا يظهر أي زر دخول للزوار العاديين إطلاقاً) -->
                 <div class="flex items-center gap-3">
                     @auth
                         <div class="hidden sm:block text-left border-l border-neutral-700 pl-3">
@@ -102,7 +104,10 @@
                             </button>
                         </form>
                     @else
-                        <a href="{{ route('login') }}" class="px-4 py-1.5 bg-white text-black font-bold text-xs hover:bg-neutral-200">دخول</a>
+                        <!-- إخفاء زر الدخول تماماً عن المستخدمين العاديين -->
+                        <div class="hidden sm:flex items-center gap-2 text-[11px] font-mono text-neutral-400 border border-neutral-800 px-3 py-1">
+                            <span>الجمهورية الجزائرية الديمقراطية الشعبية</span>
+                        </div>
                     @endauth
                 </div>
 
@@ -110,14 +115,16 @@
         </div>
     </header>
 
-    <!-- شريط الجوال الحاد -->
+    <!-- شريط الجوال الحاد (للمسجلين فقط) -->
+    @auth
     <div class="md:hidden bg-neutral-900 text-white p-2 flex justify-around text-xs font-bold no-print border-b border-black">
-        @if(Auth::check() && Auth::user()->role === 'admin')
+        @if(Auth::user()->role === 'admin')
             <a href="{{ route('admin.dashboard') }}" class="py-1 px-2 border {{ request()->routeIs('admin.dashboard') ? 'bg-white text-black border-white' : 'border-neutral-700' }}">لوحة التحكم</a>
             <a href="{{ route('admin.dashboard') }}#facilitators-section" class="py-1 px-2 border border-neutral-700">الميسرون (باللوحة)</a>
         @endif
         <a href="{{ route('portal.dashboard') }}" class="py-1 px-2 border {{ request()->routeIs('portal.*') ? 'bg-white text-black border-white' : 'border-neutral-700' }}">بوابة الإدخال</a>
     </div>
+    @endauth
 
     <!-- التنبيهات الحادة -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">

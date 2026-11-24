@@ -33,4 +33,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Secret Unpredictable Login Path
+    |--------------------------------------------------------------------------
+    | This secret path obfuscates the authentication entry point from scanners
+    | and ordinary visitors who should not see the login gate.
+    */
+    'admin_login_path' => env('ADMIN_LOGIN_PATH', 'sys-access-auth-8492'),
+
 ];

@@ -107,6 +107,37 @@
 
     <!-- قسم إدارة واعتماد قائمة الميسرين مباشرة من لوحة التحكم -->
     <div id="facilitators-section" class="space-y-4">
+
+        @if(session('new_user_credentials'))
+            <div class="p-5 border-2 border-black bg-black text-white text-xs space-y-3 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-700 pb-2 gap-2">
+                    <div class="font-black text-sm text-white flex items-center gap-2">
+                        <span class="px-2 py-0.5 bg-white text-black font-mono font-bold">[ 🔑 حساب جديد مسجل ]</span>
+                        <span>بيانات الدخول المعتمدة للمستخدم المسجل حديثاً</span>
+                    </div>
+                    <span class="text-[11px] text-neutral-300 font-bold underline">انسخ وسلم هذه البيانات للميسر فوراً:</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
+                    <div class="bg-neutral-900 p-3 border border-neutral-700">
+                        <div class="text-[10px] text-neutral-400 uppercase font-sans">الاسم واللقب</div>
+                        <div class="font-bold text-white mt-1">{{ session('new_user_credentials')['name'] }}</div>
+                    </div>
+                    <div class="bg-neutral-900 p-3 border border-neutral-700">
+                        <div class="text-[10px] text-neutral-400 uppercase font-sans">البريد الإلكتروني</div>
+                        <div class="font-bold text-white mt-1 select-all">{{ session('new_user_credentials')['email'] }}</div>
+                    </div>
+                    <div class="bg-neutral-900 p-3 border border-neutral-700">
+                        <div class="text-[10px] text-neutral-400 uppercase font-sans">الصفة / الدور</div>
+                        <div class="font-bold text-white mt-1">{{ session('new_user_credentials')['role'] }}</div>
+                    </div>
+                    <div class="bg-white p-3 border-2 border-white text-black">
+                        <div class="text-[10px] text-neutral-600 uppercase font-sans font-bold">كلمة المرور المؤقتة</div>
+                        <div class="font-black text-base mt-0.5 select-all font-mono">{{ session('new_user_credentials')['password'] }}</div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div class="bg-white border-2 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-black pb-3">
                 <div>
@@ -124,9 +155,21 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- نموذج إدخال ميسر جديد -->
-                <div class="lg:col-span-1 bg-white border-2 border-black p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-3">
-                    <div class="border-b-2 border-black pb-2">
-                        <h3 class="font-black text-xs uppercase text-black">[ + ] إضافة ميسر جديد إلى القائمة</h3>
+                <div class="lg:col-span-1 bg-white border-2 border-black p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-3"
+                     x-data="{ 
+                        regPassword: '',
+                        generatePassword() {
+                            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+                            let pass = '';
+                            for (let i = 0; i < 10; i++) {
+                                pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                            }
+                            this.regPassword = pass;
+                        }
+                     }">
+                    <div class="border-b-2 border-black pb-2 flex items-center justify-between">
+                        <h3 class="font-black text-xs uppercase text-black">[ + ] تسجيل ميسر / مستخدم جديد</h3>
+                        <span class="text-[10px] text-neutral-500 font-mono">حصر للإدارة</span>
                     </div>
 
                     <form action="{{ route('admin.facilitators.store') }}" method="POST" class="space-y-3 text-xs">
@@ -143,10 +186,11 @@
                         </div>
 
                         <div>
-                            <label class="block font-bold text-black mb-1">الصفة / الدور *</label>
-                            <select name="role" required class="w-full p-2 text-xs">
-                                <option value="facilitator">ميسر رئيسي (Lead Facilitator)</option>
-                                <option value="assistant">ميسر مساعد (Assistant)</option>
+                            <label class="block font-bold text-black mb-1">الصفة / الصلاحية *</label>
+                            <select name="role" required class="w-full p-2 text-xs font-bold">
+                                <option value="facilitator">ميسر رئيسي (Lead Facilitator) - يدير جلسات</option>
+                                <option value="assistant">ميسر مساعد (Assistant) - مشارك ميداني</option>
+                                <option value="admin">مسؤول نظام (Admin) - تحكم مركزي كامل</option>
                             </select>
                         </div>
 
@@ -166,8 +210,20 @@
                             </div>
                         </div>
 
+                        <!-- حقل كلمة المرور والتوليد العشوائي -->
+                        <div class="border-t border-black pt-2 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <label class="font-bold text-black">كلمة المرور (اختياري)</label>
+                                <button type="button" @click="generatePassword()" class="text-[10px] font-mono font-bold text-neutral-800 underline hover:text-black">
+                                    [ 🎲 توليد كلمة مرور ]
+                                </button>
+                            </div>
+                            <input type="text" name="password" x-model="regPassword" placeholder="اتركه فارغاً لتوليدها تلقائياً" class="w-full p-2 text-xs font-mono">
+                            <p class="text-[10px] text-neutral-500">في حال تركه فارغاً، سيولد النظام كلمة مرور عشوائية آمنة تلقائياً.</p>
+                        </div>
+
                         <button type="submit" class="w-full py-2.5 bg-black text-white hover:bg-neutral-800 font-black text-xs uppercase tracking-wider border border-black transition">
-                            + حفظ وإدراج في القائمة
+                            + حفظ وإدراج المستخدم في القائمة
                         </button>
                     </form>
                 </div>

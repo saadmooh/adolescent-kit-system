@@ -47,7 +47,9 @@
                     KIT
                 </div>
                 <h1 class="text-lg font-black text-black uppercase tracking-tight">حقيبة الابتكار والتعبير لليافعين</h1>
-                <p class="text-xs text-neutral-600">منظومة الإدارة والمتابعة والتقييم M&E</p>
+                <div class="inline-block border border-black px-2 py-0.5 text-[10px] font-mono font-bold bg-neutral-100">
+                    بوابة الدخول المصرح بها للميسرين والإدارة
+                </div>
             </div>
 
             <!-- تنبيه الأخطاء -->
@@ -70,10 +72,10 @@
                 @csrf
                 
                 <div>
-                    <label class="block font-bold text-black mb-1">البريد الإلكتروني</label>
+                    <label class="block font-bold text-black mb-1">البريد الإلكتروني المعتمد</label>
                     <input type="email" name="email" x-model="email" required autofocus
                         class="w-full p-2.5 text-xs font-mono"
-                        placeholder="admin@adolescent-kit.org">
+                        placeholder="user@organization.dz">
                 </div>
 
                 <div>
@@ -86,28 +88,19 @@
                 <div class="flex items-center justify-between pt-1">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="remember" class="border border-black">
-                        <span class="text-black font-semibold text-[11px]">تذكر تسجيل الدخول</span>
+                        <span class="text-black font-semibold text-[11px]">تذكر تسجيل الدخول في هذا الجهاز</span>
                     </label>
                 </div>
 
                 <button type="submit" class="w-full py-3 bg-black text-white border-2 border-black hover:bg-white hover:text-black font-black text-xs uppercase tracking-wider transition">
-                    تسجيل الدخول
+                    تسجيل الدخول إلى المنظومة
                 </button>
             </form>
 
-            <!-- خيارات الدخول السريع -->
-            <div class="pt-4 border-t-2 border-black space-y-2">
-                <div class="text-[11px] font-bold text-neutral-500 text-center">أو اختر حساباً جاهزاً للتجربة:</div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" @click="email = 'admin@adolescent-kit.org'; password = 'password123'"
-                        class="p-2 border border-black bg-white hover:bg-black hover:text-white text-black text-[11px] font-bold transition">
-                        👑 مدير النظام
-                    </button>
-                    <button type="button" @click="email = 'facilitator1@adolescent-kit.org'; password = 'password123'"
-                        class="p-2 border border-black bg-white hover:bg-black hover:text-white text-black text-[11px] font-bold transition">
-                        📋 ميسر ميداني
-                    </button>
-                </div>
+            <div class="border-t border-black pt-3 text-center">
+                <span class="text-[10px] text-neutral-500 font-mono">
+                    هذه البوابة مخصصة للموظفين والميسرين المعتمدين رسمياً. كافة محاولات الدخول غير المصرح بها مسجلة ومراقبة.
+                </span>
             </div>
 
         </div>

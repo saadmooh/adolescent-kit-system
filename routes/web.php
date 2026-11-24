@@ -12,20 +12,37 @@ use App\Http\Controllers\TrainingSessionController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// إعادة التوجيه الذكية من الصفحة الرئيسية
+// الصفحة الرئيسية (Public Showcase للزوار العاديين / توجيه آلي للمسجلين)
 Route::get('/', function () {
-    if (!Auth::check()) {
-        return redirect()->route('login');
+    if (Auth::check()) {
+        return Auth::user()->role === 'admin' 
+            ? redirect()->route('admin.dashboard')
+            : redirect()->route('portal.dashboard');
     }
-    return Auth::user()->role === 'admin' 
-        ? redirect()->route('admin.dashboard')
-        : redirect()->route('portal.dashboard');
+
+    $stats = [
+        'beneficiaries' => \App\Models\Beneficiary::count(),
+        'sessions' => \App\Models\TrainingSession::whereIn('status', ['approved', 'completed'])->count(),
+        'institutions' => \App\Models\Institution::count(),
+    ];
+
+    return view('home', compact('stats'));
 })->name('home');
 
-// مصادقة الدخول والخروج (Real Authentication)
-Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('login', [AuthController::class, 'login'])->name('login.post');
+// المسار السري غير المتوقع لبوابة الدخول (Configurable via ADMIN_LOGIN_PATH in .env)
+$loginPath = config('app.admin_login_path', 'sys-access-auth-8492');
+
+Route::get($loginPath, [AuthController::class, 'showLoginForm'])->name('login');
+Route::post($loginPath, [AuthController::class, 'login'])->name('login.post');
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+
+// إخفاء وحظر كافة مسارات الدخول والتسجيل العامة لتبدو كصفحات غير موجودة إطلاقاً (404 Not Found)
+Route::any('login', fn () => abort(404));
+Route::any('admin/login', fn () => abort(404));
+Route::any('register', fn () => abort(404));
+Route::any('signup', fn () => abort(404));
+Route::any('auth/register', fn () => abort(404));
+Route::any('user/register', fn () => abort(404));
 
 // ==========================================
 // 1. لوحة التحكم الإدارية (Admin Control Panel)
