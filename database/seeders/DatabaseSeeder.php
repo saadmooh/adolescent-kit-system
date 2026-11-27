@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(KitCatalogSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
 
         // 1. المستخدمون والميسرون
         $admin = User::firstOrCreate(
@@ -156,7 +157,7 @@ class DatabaseSeeder extends Seeder
                 'selected_activities' => [
                     'الصمت والأصوات',
                     'كيف نبدو من الداخل والخارج',
-                    'جمل تبدأ بكلمة «أنا..." أو " لدي..." أو "أستطيع..."',
+                    'جمل تبدأ بكلمة «أنا...» أو «لدي...» أو «أستطيع...»',
                     'خارطة العلاقات',
                 ],
                 'selected_competencies' => [

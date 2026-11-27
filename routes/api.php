@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth'])->group(function () {
     Route::get('/sessions', function () {
         $user = auth()->user();
-        if ($user->role === 'admin') {
+        if ($user->hasPermission('sessions.view_all')) {
             return TrainingSession::with(['institution', 'attendances.beneficiary'])->get();
         }
 
@@ -21,7 +21,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/sessions/{session}/stats', function (TrainingSession $session, ReportAggregationService $service) {
         $user = auth()->user();
-        $isAllowed = ($user->role === 'admin')
+        $isAllowed = $user->hasPermission('sessions.view_all')
             || ($session->lead_facilitator_1_id === $user->id)
             || ($session->lead_facilitator_2_id === $user->id);
 

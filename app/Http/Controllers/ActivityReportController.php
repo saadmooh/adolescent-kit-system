@@ -22,6 +22,8 @@ class ActivityReportController extends Controller
 
         $report = $session->activityReport;
 
+        // المعلومات الأساسية (الميسرون وجهة الاتصال والولاية والتواريخ) مشتقة من الجلسة والمؤسسة
+        // ولا تُعدَّل من هذا النموذج، لذا تُستبعد من التحقق لمنع تجاوزها عبر طلب مزيف.
         $validated = $request->validate([
             'selected_activities' => 'nullable|array',
             'selected_competencies' => 'nullable|array',
@@ -33,15 +35,6 @@ class ActivityReportController extends Controller
             'attendance_notes' => 'nullable|string',
             'general_remarks' => 'nullable|string',
             'recommendations' => 'nullable|string',
-            'rapporteur_id' => 'nullable|exists:users,id',
-            'rapporteur_wilaya' => 'nullable|string|max:100',
-            'rapporteur_date' => 'nullable|date',
-            'host_contact_name' => 'nullable|string|max:150',
-            'host_contact_title' => 'nullable|string|max:150',
-            'host_contact_phone' => 'nullable|string|max:50',
-            'host_contact_email' => 'nullable|email|max:150',
-            'host_wilaya' => 'nullable|string|max:100',
-            'host_approval_date' => 'nullable|date',
         ]);
 
         $report->update($validated);

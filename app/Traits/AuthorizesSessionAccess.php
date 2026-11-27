@@ -18,8 +18,8 @@ trait AuthorizesSessionAccess
             abort(401, 'يجب تسجيل الدخول أولاً.');
         }
 
-        // مدير النظام يملك صلاحية الرقابة على كافة الجلسات
-        if ($user->role === 'admin') {
+        // من يملك صلاحية عرض كل الأنشطة يتجاوز قيد الملكية
+        if ($user->hasPermission('sessions.view_all')) {
             return;
         }
 
@@ -34,6 +34,6 @@ trait AuthorizesSessionAccess
             return;
         }
 
-        abort(403, 'عذراً، غير مصرح لك بعرض أو إدارة أو تعديل بيانات هذه الجلسة التدريبية.');
+        abort(403, 'غير مصرح لك بالوصول إلى هذه الجلسة.');
     }
 }

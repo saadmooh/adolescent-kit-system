@@ -11,7 +11,7 @@
         body {
             font-family: 'Times New Roman', Tahoma, Arial, sans-serif;
             font-size: 11pt;
-            color: #000;
+            color: #002F6C;
             background: #fff;
             line-height: 1.3;
         }
@@ -40,7 +40,7 @@
             margin-bottom: 15px;
         }
         th, td {
-            border: 1px solid #000;
+            border: 1px solid #002F6C;
             padding: 4px 6px;
             text-align: center;
             font-size: 10pt;
@@ -59,18 +59,20 @@
             font-weight: bold;
             font-size: 11pt;
         }
+        .print-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
         .print-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: #000000;
+            background: #002F6C;
             color: #ffffff;
-            padding: 10px 18px;
+            padding: 8px 16px;
             border-radius: 0px;
-            border: 2px solid #000000;
+            border: 2px solid #002F6C;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+            box-shadow: 4px 4px 0px 0px rgba(0,47,108,1);
         }
         @media print {
             .no-print { display: none !important; }
@@ -79,7 +81,9 @@
 </head>
 <body>
 
-    <button onclick="window.print()" class="print-btn no-print">🖨️ طباعة كشف الحضور (Print)</button>
+    <div class="print-toolbar no-print">
+        <button onclick="window.print()" class="print-btn">🖨️ طباعة كشف الحضور (Print)</button>
+    </div>
 
     <div class="header-title">
         قائمة الحضور تدريب حقيبة الابتكار والتعبير لليافعين Kit Adolescent

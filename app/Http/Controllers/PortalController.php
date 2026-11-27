@@ -24,24 +24,52 @@ class PortalController extends Controller
     ) {}
 
     /**
-     * الواجهة الرئيسية للميسر في الميدان
+     * الواجهة الرئيسية للميسر في الميدان: قائمة الأنشطة مرتبة تنازلياً (الجديد أولاً) مع البحث والمودال
      */
     public function index()
     {
         $user = Auth::user();
 
-        // الجلسات الخاصة بالميسر الحالي
-        $mySessions = TrainingSession::with(['institution', 'attendances'])
+        // الجلسات الخاصة بالميسر الحالي مرتبة تنازلياً (الأحدث هو الأول دائماً)
+        $mySessions = TrainingSession::with(['institution', 'leadFacilitator1', 'leadFacilitator2', 'attendances', 'activityReport'])
             ->where(function ($query) use ($user) {
                 if ($user->role !== 'admin') {
                     $query->where('lead_facilitator_1_id', $user->id)
-                          ->orWhere('lead_facilitator_2_id', $user->id);
+                          ->orWhere('lead_facilitator_2_id', $user->id)
+                          ->orWhereJsonContains('assistant_facilitators', $user->name);
                 }
             })
             ->latest('session_date')
-            ->paginate(10);
+            ->latest('id')
+            ->get();
 
-        return view('portal.index', compact('mySessions'));
+        // بيانات المؤسسات والميسرين والولايات لتغذية Multi-step Form Modal مباشرة
+        $institutions = Institution::orderBy('name')->get();
+        $facilitators = User::whereIn('role', ['facilitator', 'assistant', 'admin'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        $wilayasData = ReportAggregationService::WILAYAS_DATA;
+
+        return view('portal.index', compact('mySessions', 'institutions', 'facilitators', 'wilayasData'));
+    }
+
+    /**
+     * حذف النشاط / الجلسة التدريبية
+     */
+    public function destroySession(TrainingSession $session)
+    {
+        $this->authorizeSessionAccess($session);
+
+        if ($session->status === 'approved' && !auth()->user()->hasPermission('sessions.approve')) {
+            return back()->withErrors(['error' => 'لا يمكنك حذف جلسة تم اعتمادها ومصادقتها رسمياً من طرف الإدارة.']);
+        }
+
+        $title = $session->title;
+        $session->delete();
+
+        return redirect()->route('portal.dashboard')
+            ->with('success', "تم حذف النشاط ({$title}) بنجاح.");
     }
 
     /**
@@ -53,14 +81,7 @@ class PortalController extends Controller
         $facilitators = User::whereIn('role', ['facilitator', 'assistant', 'admin'])->orderBy('name')->get();
 
         // قائمة الولايات والبلديات الجزائرية للربط التلقائي
-        $wilayasData = [
-            'الجزائر' => ['باب الوادي', 'بولوغين', 'الجزائر الوسطى', 'سيدي امحمد', 'الحراش', 'القبة', 'بئر مراد رايس', 'درارية', 'زرالدة'],
-            'وهران' => ['وهران', 'السانية', 'بئر الجير', 'عين الترك', 'أرزيو', 'بطيوة', 'قديل'],
-            'قسنطينة' => ['قسنطينة', 'الخروب', 'عين سمارة', 'حامة بوزيان', 'زيغود يوسف', 'ابن باديس'],
-            'سطيف' => ['سطيف', 'العلمة', 'عين أرنات', 'عين الكبيرة', 'عين ولمان', 'بوقاعة'],
-            'البليدة' => ['البليدة', 'بوفاريك', 'أولاد يعيش', 'العفرون', 'موزاية', 'بوقرة'],
-            'تيزي وزو' => ['تيزي وزو', 'ذراع بن خدة', 'عزازقة', 'تيزي غنيف', 'بوغني', 'واقنون'],
-        ];
+        $wilayasData = ReportAggregationService::WILAYAS_DATA;
 
         return view('portal.sessions.create', compact('institutions', 'facilitators', 'wilayasData'));
     }
@@ -73,7 +94,8 @@ class PortalController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'session_date' => 'required|date',
-            'institution_id' => 'required|exists:institutions,id',
+            'institution_name' => 'required_without:institution_id|nullable|string|max:255',
+            'institution_id' => 'required_without:institution_name|nullable|exists:institutions,id',
             'venue' => 'nullable|string|max:255',
             'wilaya' => 'required|string|max:100',
             'municipality' => 'required|string|max:100',
@@ -85,10 +107,20 @@ class PortalController extends Controller
             'transit_to_municipality' => 'nullable|string|max:100',
         ], [
             'lead_facilitator_2_id.different' => 'لا يمكن اختيار نفس الشخص كميسر رئيسي ومساعد في آن واحد.',
+            'institution_name.required_without' => 'يرجى إدخال اسم المؤسسة / الهيئة المستقبلة.',
         ]);
 
+        // خانة الإدخال المباشر: تحويل اسم المؤسسة المُدخل إلى سجل مؤسسة (إنشاء تلقائي عند عدم وجوده)
+        if (!empty(trim((string) ($validated['institution_name'] ?? '')))) {
+            $validated['institution_id'] = Institution::firstOrCreate([
+                'name' => trim($validated['institution_name']),
+            ])->id;
+        }
+        unset($validated['institution_name']);
+
         if (!empty($validated['assistant_facilitators'])) {
-            $validated['assistant_facilitators'] = array_values(array_filter($validated['assistant_facilitators'], fn($val) => !empty(trim($val ?? ''))));
+            $assistants = array_filter($validated['assistant_facilitators'], fn($val) => !empty(trim((string) $val)));
+            $validated['assistant_facilitators'] = array_values(array_unique($assistants));
         }
 
         $session = TrainingSession::create($validated);
@@ -142,12 +174,17 @@ class PortalController extends Controller
             'gender' => 'required|in:ذكر,أنثى',
             'municipality' => 'required|string|max:100',
             'is_schooled' => 'required|boolean',
-            'education_level' => 'required|string',
+            'education_level' => 'required|string|in:ابتدائي,متوسط,ثانوي,تكوين مهني,غير متمدرس',
             'has_chronic_disease' => 'required|boolean',
-            'chronic_disease_details' => 'nullable|string|max:255',
+            'chronic_disease_details' => 'required_if:has_chronic_disease,1|nullable|string|max:255',
             'has_disability' => 'required|boolean',
-            'disability_type' => 'nullable|string',
+            'disability_type' => 'required_if:has_disability,1|nullable|in:حركية,بصرية,الصم البكم,شيء آخر',
             'disability_details' => 'nullable|string|max:255',
+        ], [
+            'education_level.in' => 'يرجى تحديد المستوى الدراسي من القائمة المعتمدة.',
+            'chronic_disease_details.required_if' => 'يرجى تحديد نوع وتفاصيل المرض المزمن عند الإشارة إلى وجوده.',
+            'disability_type.required_if' => 'يرجى تحديد نوع الإعاقة عند الإشارة إلى وجودها.',
+            'disability_type.in' => 'يرجى تحديد نوع الإعاقة من القائمة المعتمدة.',
         ]);
 
         // تصحيح منطقي: إذا كان غير متمدرس، يثبت المستوى كغير متمدرس
@@ -220,14 +257,7 @@ class PortalController extends Controller
         $institutions = Institution::orderBy('name')->get();
         $facilitators = User::whereIn('role', ['facilitator', 'assistant', 'admin'])->orderBy('name')->get();
 
-        $wilayasData = [
-            'الجزائر' => ['باب الوادي', 'بولوغين', 'الجزائر الوسطى', 'سيدي امحمد', 'الحراش', 'القبة', 'بئر مراد رايس', 'درارية', 'زرالدة'],
-            'وهران' => ['وهران', 'السانية', 'بئر الجير', 'عين الترك', 'أرزيو', 'بطيوة', 'قديل'],
-            'قسنطينة' => ['قسنطينة', 'الخروب', 'عين سمارة', 'حامة بوزيان', 'زيغود يوسف', 'ابن باديس'],
-            'سطيف' => ['سطيف', 'العلمة', 'عين أرنات', 'عين الكبيرة', 'عين ولمان', 'بوقاعة'],
-            'البليدة' => ['البليدة', 'بوفاريك', 'أولاد يعيش', 'العفرون', 'موزاية', 'بوقرة'],
-            'تيزي وزو' => ['تيزي وزو', 'ذراع بن خدة', 'عزازقة', 'تيزي غنيف', 'بوغني', 'واقنون'],
-        ];
+        $wilayasData = ReportAggregationService::WILAYAS_DATA;
 
         return view('portal.sessions.edit', compact('session', 'institutions', 'facilitators', 'wilayasData'));
     }
@@ -239,15 +269,16 @@ class PortalController extends Controller
     {
         $this->authorizeSessionAccess($session);
 
-        // حماية أمنية: منع تصعيد الصلاحيات واعتماد الجلسة إلا للمدير فقط
-        $statusRule = Auth::user()->role === 'admin'
+        // حماية أمنية: منع تصعيد الصلاحيات واعتماد الجلسة إلا لمن يملك صلاحية الاعتماد
+        $statusRule = Auth::user()->hasPermission('sessions.approve')
             ? 'required|in:draft,ongoing,completed,approved'
             : 'required|in:draft,ongoing,completed';
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'session_date' => 'required|date',
-            'institution_id' => 'required|exists:institutions,id',
+            'institution_name' => 'required_without:institution_id|nullable|string|max:255',
+            'institution_id' => 'required_without:institution_name|nullable|exists:institutions,id',
             'venue' => 'nullable|string|max:255',
             'wilaya' => 'required|string|max:100',
             'municipality' => 'required|string|max:100',
@@ -260,11 +291,21 @@ class PortalController extends Controller
             'status' => $statusRule,
         ], [
             'lead_facilitator_2_id.different' => 'لا يمكن اختيار نفس الشخص كميسر رئيسي ومساعد في آن واحد.',
+            'institution_name.required_without' => 'يرجى إدخال اسم المؤسسة / الهيئة المستقبلة.',
             'status.in' => 'غير مصرح لك باعتماد الجلسة رسمياً؛ فقط إدارة النظام تملك صلاحية الاعتماد.',
         ]);
 
+        // خانة الإدخال المباشر: تحويل اسم المؤسسة المُدخل إلى سجل مؤسسة (إنشاء تلقائي عند عدم وجوده)
+        if (!empty(trim((string) ($validated['institution_name'] ?? '')))) {
+            $validated['institution_id'] = Institution::firstOrCreate([
+                'name' => trim($validated['institution_name']),
+            ])->id;
+        }
+        unset($validated['institution_name']);
+
         if (!empty($validated['assistant_facilitators'])) {
-            $validated['assistant_facilitators'] = array_values(array_filter($validated['assistant_facilitators'], fn($val) => !empty(trim($val ?? ''))));
+            $assistants = array_filter($validated['assistant_facilitators'], fn($val) => !empty(trim((string) $val)));
+            $validated['assistant_facilitators'] = array_values(array_unique($assistants));
         }
 
         $session->update($validated);
@@ -300,13 +341,18 @@ class PortalController extends Controller
             'gender' => 'required|in:ذكر,أنثى',
             'municipality' => 'required|string|max:100',
             'is_schooled' => 'required|boolean',
-            'education_level' => 'required|string',
+            'education_level' => 'required|string|in:ابتدائي,متوسط,ثانوي,تكوين مهني,غير متمدرس',
             'has_chronic_disease' => 'required|boolean',
-            'chronic_disease_details' => 'nullable|string|max:255',
+            'chronic_disease_details' => 'required_if:has_chronic_disease,1|nullable|string|max:255',
             'has_disability' => 'required|boolean',
-            'disability_type' => 'nullable|string',
+            'disability_type' => 'required_if:has_disability,1|nullable|in:حركية,بصرية,الصم البكم,شيء آخر',
             'disability_details' => 'nullable|string|max:255',
             'serial_number' => 'nullable|integer|min:1|max:70',
+        ], [
+            'education_level.in' => 'يرجى تحديد المستوى الدراسي من القائمة المعتمدة.',
+            'chronic_disease_details.required_if' => 'يرجى تحديد نوع وتفاصيل المرض المزمن عند الإشارة إلى وجوده.',
+            'disability_type.required_if' => 'يرجى تحديد نوع الإعاقة عند الإشارة إلى وجودها.',
+            'disability_type.in' => 'يرجى تحديد نوع الإعاقة من القائمة المعتمدة.',
         ]);
 
         $educationLevel = $request->boolean('is_schooled') ? $validated['education_level'] : 'غير متمدرس';

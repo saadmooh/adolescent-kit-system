@@ -15,9 +15,7 @@ class AuthController extends Controller
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return Auth::user()->role === 'admin'
-                ? redirect()->route('admin.dashboard')
-                : redirect()->route('portal.dashboard');
+            return redirect()->route('dashboard');
         }
 
         return view('auth.login');
@@ -26,9 +24,7 @@ class AuthController extends Controller
     public function showRegisterForm()
     {
         if (Auth::check()) {
-            return Auth::user()->role === 'admin'
-                ? redirect()->route('admin.dashboard')
-                : redirect()->route('portal.dashboard');
+            return redirect()->route('dashboard');
         }
 
         $wilayasData = ReportAggregationService::WILAYAS_DATA;
@@ -42,30 +38,30 @@ class AuthController extends Controller
             'name' => 'required|string|max:150',
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|max:50',
-            'role' => 'required|in:facilitator,assistant',
             'wilaya' => 'required|string|max:100',
             'municipality' => 'required|string|max:100',
-            'password' => 'required|string|min:8|confirmed',
+            'address' => 'required|string|max:500',
+            'password' => 'required|string|min:8',
         ], [
-            'name.required' => 'يرجى إدخال الاسم واللقب كاملاً.',
+            'name.required' => 'يرجى إدخال الاسم الكامل.',
             'email.required' => 'يرجى إدخال البريد الإلكتروني.',
             'email.unique' => 'البريد الإلكتروني مسجل مسبقاً في المنظومة.',
             'phone.required' => 'يرجى إدخال رقم الهاتف للتواصل.',
-            'role.required' => 'يرجى تحديد الصفة (ميسر رئيسي أو مساعد).',
-            'wilaya.required' => 'يرجى اختيار الولاية.',
-            'municipality.required' => 'يرجى اختيار البلدية.',
+            'wilaya.required' => 'يرجى اختيار الولاية أولاً.',
+            'municipality.required' => 'يرجى إدخال اسم البلدية.',
+            'address.required' => 'يرجى إدخال العنوان الكامل.',
             'password.required' => 'يرجى تعيين كلمة المرور.',
             'password.min' => 'كلمة المرور يجب أن لا تقل عن 8 أحرف.',
-            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق مع كلمة المرور المدخلة.',
         ]);
 
         User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
-            'role' => $validated['role'],
+            'role' => 'facilitator',
             'wilaya' => $validated['wilaya'],
             'municipality' => $validated['municipality'],
+            'address' => $validated['address'] ?? null,
             'password' => Hash::make($validated['password']),
             'approval_status' => 'pending',
             'is_active' => false,
@@ -100,7 +96,7 @@ class AuthController extends Controller
             $user = Auth::user();
 
             // فحص شرط اعتماد وتفعيل الحساب من طرف مدير النظام
-            if (!$user->isApproved() && $user->role !== 'admin') {
+            if (!$user->isApproved()) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -125,13 +121,9 @@ class AuthController extends Controller
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
-            if ($user->role === 'admin') {
-                return redirect()->intended(route('admin.dashboard'))
-                    ->with('success', "مرحباً بك يا مدير النظام: {$user->name}");
-            }
-
-            return redirect()->intended(route('portal.dashboard'))
-                ->with('success', "أهلاً بك يا زميلنا الميسر: {$user->name}");
+            // اللوحة الموحّدة واحدة للجميع — الأقسام تظهر حسب صلاحيات الدور
+            return redirect()->intended(route('dashboard'))
+                ->with('success', "أهلاً بك: {$user->name} — دورك الحالي: {$user->roleName()}");
         }
 
         RateLimiter::hit($throttleKey, 60);

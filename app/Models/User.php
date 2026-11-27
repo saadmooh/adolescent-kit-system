@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -21,6 +22,7 @@ class User extends Authenticatable
         'admin_notes',
         'wilaya',
         'municipality',
+        'address',
         'password',
     ];
 
@@ -56,7 +58,35 @@ class User extends Authenticatable
 
     public function leadSessions()
     {
-        return $this->hasMany(TrainingSession::class, 'lead_facilitator_1_id')
-                    ->orWhere('lead_facilitator_2_id', $this->id);
+        return $this->hasMany(TrainingSession::class, 'lead_facilitator_1_id');
+    }
+
+    /**
+     * الدور المُسنَد للمستخدم (مفتاح عبر عمود role = slug الدور)
+     */
+    public function roleModel(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role', 'slug');
+    }
+
+    /**
+     * التحقق من امتلاك صلاحية معيّنة حسب دور المستخدم
+     * (مدير النظام يملك كل الصلاحيات دائماً كحماية احتياطية)
+     */
+    public function hasPermission(string $key): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        return $this->roleModel?->hasPermission($key) ?? false;
+    }
+
+    /**
+     * الاسم العربي للدور للعرض في الواجهات
+     */
+    public function roleName(): string
+    {
+        return $this->roleModel?->name ?? $this->role;
     }
 }

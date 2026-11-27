@@ -11,7 +11,7 @@
         body {
             font-family: 'Times New Roman', Tahoma, Arial, sans-serif;
             font-size: 11pt;
-            color: #000;
+            color: #002F6C;
             background: #fff;
             line-height: 1.5;
         }
@@ -27,7 +27,7 @@
             font-weight: bold;
             margin-top: 15px;
             margin-bottom: 8px;
-            color: #000;
+            color: #002F6C;
             border-bottom: 1px solid #333;
             padding-bottom: 3px;
         }
@@ -50,7 +50,7 @@
             justify-content: space-between;
         }
         .age-box {
-            border: 1px solid #000;
+            border: 1px solid #002F6C;
             padding: 4px 8px;
             margin: 3px;
             display: inline-block;
@@ -71,18 +71,20 @@
             margin-bottom: 8px;
             background: #fafafa;
         }
+        .print-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
         .print-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: #000000;
+            background: #002F6C;
             color: #ffffff;
-            padding: 10px 18px;
+            padding: 8px 16px;
             border-radius: 0px;
-            border: 2px solid #000000;
+            border: 2px solid #002F6C;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+            box-shadow: 4px 4px 0px 0px rgba(0,47,108,1);
         }
         @media print {
             .no-print { display: none !important; }
@@ -92,7 +94,9 @@
 </head>
 <body>
 
-    <button onclick="window.print()" class="print-btn no-print">🖨️ طباعة تقرير النشاط (Print)</button>
+    <div class="print-toolbar no-print">
+        <button onclick="window.print()" class="print-btn">🖨️ طباعة تقرير النشاط (Print)</button>
+    </div>
 
     <div class="main-title">تقرير حول النشاط</div>
 
@@ -135,7 +139,7 @@
         الاسم: <span class="dotted" style="min-width: 150px;">{{ $report->host_contact_name }}</span> 
         الهيئة: <span class="dotted" style="min-width: 150px;">{{ $session->institution->name }}</span>
         رقم الهاتف: <span class="dotted" style="min-width: 120px;">{{ $report->host_contact_phone }}</span>
-        البريد الالكتروني: <span class="dotted" style="min-width: 150px;">{{ $report->host_contact_email }}</span>
+        <span style="white-space: nowrap;">البريد الالكتروني: <span class="dotted" style="min-width: 150px;">{{ $report->host_contact_email }}</span></span>
     </div>
 
     <!-- معلومات حول الفئة المستهدفة -->
@@ -203,7 +207,7 @@
                     $actsList = [
                         'الصمت والأصوات',
                         'كيف نبدو من الداخل والخارج',
-                        'جمل تبدأ بكلمة «أنا..." أو " لدي..." أو "أستطيع..."',
+                        'جمل تبدأ بكلمة «أنا...» أو «لدي...» أو «أستطيع...»',
                         'ما نقدمه لأنفسنا وللآخرين',
                         'قصص من منظور الحيوانات والحشرات والطيور',
                         'خارطة العلاقات',
@@ -227,10 +231,10 @@
                 @php
                     $skillsList = [
                         'التواصل والتعبير',
-                        'الهوية والاعنزاز بالنفس',
+                        'الهوية والاعتزاز بالنفس',
                         'القيادة والتأثير',
                         'حل المشكلات وإدارة الأزمات',
-                        'التعامل مه التوتر وإدارة العواطف',
+                        'التعامل مع التوتر وإدارة العواطف',
                         'التعاون والعمل الجماعي',
                         'التعاطف والاحترام',
                         'الأمل في المستقبل وتحديد الأهداف',
@@ -276,11 +280,11 @@
         <li>[ {{ $hasGate ? 'X' : ' ' }} ] الباب الخارجي للمؤسسة التي اجري بها النشاط</li>
         <li>[ {{ $hasTeam ? 'X' : ' ' }} ] طاقم الميسرين</li>
         <li>[ {{ $hasGroup ? 'X' : ' ' }} ] صورة جماعية لليافعين و الهيئة المستقبلة و الميسرين</li>
-        <li>[ {{ $hasAction ? 'X' : ' ' }} ] صورة لجميع لليافعين اثناء النشاط</li>
+        <li>[ {{ $hasAction ? 'X' : ' ' }} ] صورة لجميع اليافعين أثناء النشاط</li>
         <li>[ {{ $hasVideo ? 'X' : ' ' }} ] فيديو للنشاط</li>
     </ul>
 
-    <div style="border: 2px solid #000; padding: 15px; margin-top: 25px; line-height: 2;">
+    <div style="border: 2px solid #002F6C; padding: 15px; margin-top: 25px; line-height: 2;">
         <div style="text-align: center; font-weight: bold; font-size: 13pt; margin-bottom: 10px; text-decoration: underline;">
             إشهاد الهيئة المستقبلة
         </div>
@@ -289,7 +293,7 @@
         <div>الفئة: <span class="dotted">{{ $session->institution->category }}</span> الهيئة المستقبلة: <span class="dotted">{{ $session->institution->name }}</span></div>
         <div>جهة الاتصال: الاسم: <span class="dotted">{{ $report->host_contact_name }}</span> الصفة: <span class="dotted">{{ $report->host_contact_title }}</span> الهاتف: <span class="dotted">{{ $report->host_contact_phone }}</span></div>
         <div>التاريخ: <span class="dotted">{{ $session->session_date->format('d/m/Y') }}</span></div>
-        <div>الميسرين: <span class="dotted" style="min-width: 70%;">{{ $session->leadFacilitator1->name ?? '' }} - {{ $session->leadFacilitator2->name ?? '' }}</span></div>
+        <div>الميسرين: <span class="dotted" style="min-width: 70%;">{{ collect([$session->leadFacilitator1?->name, $session->leadFacilitator2?->name])->filter()->implode(' - ') }}</span></div>
         <div>عدد اليافعين: <span class="dotted">{{ $stats['total_attendees'] }}</span> ( الاناث: <span class="dotted">{{ $stats['female_count'] }}</span> / الذكور: <span class="dotted">{{ $stats['male_count'] }}</span> )</div>
         <div>نوع الاعاقات: <span class="dotted">{{ $stats['disabled_count'] > 0 ? "حركية ({$stats['disabilities_breakdown']['حركية']})، بصرية ({$stats['disabilities_breakdown']['بصرية']})" : 'لا توجد' }}</span></div>
         <div>النشاطات: <span class="dotted" style="min-width: 70%;">{{ !empty($report->selected_activities) ? implode('، ', array_slice($report->selected_activities, 0, 4)) : 'أنشطة حقيبة الابتكار' }}</span></div>
